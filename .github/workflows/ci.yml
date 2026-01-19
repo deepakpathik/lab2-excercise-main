@@ -1,33 +1,68 @@
 name: Standard CI
 
-# Trigger
 on: push
-
 jobs:
-    build-test:
-        name: Buld test and deploy
-        runs-on: ubuntu-latest
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
 
-        steps:
-            - name: Checkout latest code
-              uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Install Dependencies
-              run: npm install
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
 
-            - name: Setup Nodejs
-              uses: actions/setup-node@v4
-              with:
-                node-version: 18
+      - run: npm install
+      - run: npm run lint
 
-            - name: Run Lint
-              run: npm run lint
+  build:
+    name: Build
+    needs: lint
+    runs-on: ubuntu-latest
 
-            - name: Run Build
-              run: npm run build
+    steps:
+      - uses: actions/checkout@v4
 
-            - name: Run Test
-              run: npm run test
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
 
-            - name: Run Deploy
-              run: npm run deploy
+      - run: npm install
+      - run: npm run build
+
+  test:
+    name: Test
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - run: npm install
+      - run: npm test
+
+  deploy:
+    name: Deploy
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: npm
+
+      - run: npm install
+      - run: npm run build
+      - run: npm run deploy
